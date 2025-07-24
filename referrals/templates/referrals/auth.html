@@ -1,0 +1,33 @@
+{% extends 'referrals/base.html' %}
+
+{% block title %}Вход по телефону{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <h2 class="mb-4">Введите ваш номер телефона</h2>
+        <form id="authForm">
+            <div class="mb-3">
+                <input type="tel" class="form-control" name="phone" placeholder="+79991234567" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Получить код</button>
+        </form>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+document.getElementById('authForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const response = await fetch('/api/auth/', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({phone: e.target.phone.value})
+});
+    if (response.ok) {
+        window.location.href = '/verify/?phone=' + encodeURIComponent(e.target.phone.value);
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}

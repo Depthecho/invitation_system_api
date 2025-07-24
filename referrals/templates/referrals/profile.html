@@ -1,0 +1,103 @@
+{% extends 'referrals/base.html' %}
+
+{% block title %}Ваш профиль{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Ваш профиль</h2>
+            <a href="{% url 'logout' %}" class="btn btn-outline-danger">Выйти</a>
+        </div>
+
+        <!-- Блок информации о пользователе -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Ваши данные</h5>
+                <p class="card-text">Телефон: <strong id="userPhone">{{ user.phone }}</strong></p>
+                <p class="card-text">Ваш инвайт-код: <strong id="userInviteCode">{{ user.invite_code }}</strong></p>
+            </div>
+        </div>
+
+        <!-- Блок активации инвайт-кода -->
+        {% if not user.activated_invite %}
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Активировать инвайт-код</h5>
+                <form id="inviteForm">
+                    <div class="mb-3">
+                        <input type="text" class="form-control" name="invite_code" placeholder="Введите чужой код" required>
+                    </div>
+                    <button type="submit" class="btn btn-success">Активировать</button>
+                </form>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info mb-4">
+            Вы активировали код: <strong>{{ user.activated_invite.invite_code }}</strong>
+        </div>
+        {% endif %}
+
+        <!-- Блок списка рефералов -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Ваши рефералы <span class="badge bg-primary" id="referralsCount">0</span></h5>
+            </div>
+            <div class="card-body">
+                <div id="referralsList" class="list-group">
+                    <div class="text-muted">Загрузка списка...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Загружаем данные профиля и рефералов
+    fetch('/api/profile/')
+        .then(response => response.json())
+        .then(data => {
+            // Обновляем информацию о рефералах
+            const countElement = document.getElementById('referralsCount');
+            const listElement = document.getElementById('referralsList');
+
+            countElement.textContent = data.referrals.count;
+
+            if (data.referrals.count > 0) {
+                listElement.innerHTML = data.referrals.users.map(user => `
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between">
+                            <span>${user.phone}</span>
+                            <span class="badge bg-secondary">${user.invite_code}</span>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                listElement.innerHTML = '<div class="text-muted">У вас пока нет рефералов</div>';
+            }
+        });
+
+    // Обработка формы активации инвайт-кода
+    document.getElementById('inviteForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const response = await fetch('/api/profile/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                invite_code: e.target.invite_code.value
+            })
+        });
+
+        if (response.ok) {
+            location.reload(); // Перезагружаем страницу после успешной активации
+        } else {
+            alert('Ошибка при активации кода');
+        }
+    });
+});
+</script>
+{% endblock %}
